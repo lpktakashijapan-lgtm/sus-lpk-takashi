@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Uji Usability SUS | LPK Takashi Japan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root{
+            --primary:#8f0000;
+            --light:#ffffff;
+            --dark:#222;
+        }
+
+        body{
+            margin:0;
+            font-family:'Segoe UI', Arial, sans-serif;
+            color:var(--dark);
+            background:
+                linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)),
+                url("https://images.unsplash.com/photo-1549692520-acc6669e2f0c") 
+                no-repeat center center fixed;
+            background-size:cover;
+        }
+
+        header{
+            text-align:center;
+            padding:50px 20px;
+            color:#fff;
+        }
+
+        header h1{
+            margin:0;
+            font-size:34px;
+        }
+
+        header p{
+            opacity:.9;
+            margin-top:10px;
+        }
+
+        .container{
+            max-width:900px;
+            margin:0 auto 40px;
+            background:rgba(255,255,255,.95);
+            padding:30px;
+            border-radius:16px;
+            box-shadow:0 25px 50px rgba(0,0,0,.25);
+        }
+
+        .question{
+            margin-bottom:25px;
+            padding:18px;
+            background:#fbeaea;
+            border-radius:12px;
+        }
+
+        .options{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+            gap:10px;
+            margin-top:12px;
+        }
+
+        .options label{
+            background:#fff;
+            padding:10px;
+            border-radius:8px;
+            border:1px solid #ddd;
+            cursor:pointer;
+            text-align:center;
+            font-size:14px;
+            transition: 0.3s;
+        }
+
+        .options input{
+            display:none;
+        }
+
+        .options input:checked + span{
+            background:var(--primary);
+            color:#fff;
+            display:block;
+            padding:10px;
+            border-radius:6px;
+        }
+
+        button{
+            width:100%;
+            padding:15px;
+            background:var(--primary);
+            color:#fff;
+            border:none;
+            border-radius:12px;
+            font-size:18px;
+            cursor:pointer;
+            font-weight: bold;
+        }
+
+        button:hover{
+            background:#b00000;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result{
+            display:none;
+            margin-top:30px;
+            padding:25px;
+            border-radius:14px;
+            background:#f7f7f7;
+            text-align:center;
+            border: 2px solid var(--primary);
+        }
+
+        .score{
+            font-size:48px;
+            font-weight:bold;
+            color:var(--primary);
+        }
+
+        footer{
+            text-align:center;
+            padding:20px;
+            color:#eee;
+            font-size:14px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>System Usability Scale (SUS)</h1>
+    <p>Evaluasi Website LPK Takashi Japan</p>
+</header>
+
+<div class="container">
+    <form id="susForm">
+        <div id="questionsContainer"></div>
+        <button type="submit" id="submitBtn">Kirim & Hitung Skor</button>
+    </form>
+
+    <div class="result" id="result">
+        <h2>Hasil Pengujian</h2>
+        <div class="score" id="scoreDisplay"></div>
+        <p id="categoryDisplay" style="font-weight: bold; font-size: 20px;"></p>
+        <p>Terima kasih atas partisipasi Anda!</p>
+    </div>
+</div>
+
+<footer>
+    © 2026 LPK Takashi Japan | Pengujian Usability
+</footer>
+
+<script>
+// 1. Daftar Pertanyaan SUS
+const questions = [
+    "Saya berpikir bahwa saya akan sering menggunakan website ini",
+    "Saya merasa website ini terlalu rumit untuk digunakan",
+    "Saya merasa website ini mudah digunakan",
+    "Saya membutuhkan bantuan teknis untuk dapat menggunakan website ini",
+    "Saya merasa fitur-fitur pada website ini terintegrasi dengan baik",
+    "Saya merasa terdapat terlalu banyak ketidakkonsistenan pada website ini",
+    "Saya membayangkan kebanyakan orang akan mudah mempelajari website ini",
+    "Saya merasa website ini membingungkan untuk digunakan",
+    "Saya merasa percaya diri saat menggunakan website ini",
+    "Saya perlu mempelajari banyak hal sebelum bisa menggunakan website ini"
+];
+
+// 2. Render Pertanyaan secara otomatis
+const container = document.getElementById('questionsContainer');
+questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'question';
+    div.innerHTML = `
+        <strong>${i + 1}. ${q}</strong>
+        <div class="options">
+            ${[1, 2, 3, 4, 5].map(v => `
+                <label>
+                    <input type="radio" name="q${i}" value="${v}" required>
+                    <span>${["STS", "TS", "N", "S", "SS"][v - 1]}</span>
+                </label>
+            `).join("")}
+        </div>
+    `;
+    container.appendChild(div);
+});
+
+// 3. Logika Submit dan Pengiriman Data
+const scriptURL = 'https://script.google.com/macros/s/AKfycbylgAguZBGbNnAWurOcJR38u5EwGlUK322TqtFOt4y83TkLaVcb3DW9XSW3nhWk2v8lbg/exec';
+const form = document.getElementById("susForm");
+const submitBtn = document.getElementById("submitBtn");
+
+form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Mengirim...";
+
+    let totalScore = 0;
+    const formData = new FormData();
+    formData.append("timestamp", new Date().toLocaleString());
+
+    questions.forEach((_, i) => {
+        const val = parseInt(document.querySelector(`input[name="q${i}"]:checked`).value);
+        formData.append(`q${i + 1}`, val);
+
+        // Algoritma Skor SUS
+        if ((i + 1) % 2 === 1) {
+            totalScore += (val - 1); // Pertanyaan positif (ganjil)
+        } else {
+            totalScore += (5 - val); // Pertanyaan negatif (genap)
+        }
+    });
+
+    const finalScore = totalScore * 2.5;
+    const category = 
+        finalScore >= 80 ? "Sangat Baik (A)" :
+        finalScore >= 68 ? "Baik (B)" :
+        finalScore >= 50 ? "Cukup (C)" : "Kurang (D/F)";
+
+    formData.append("score", finalScore.toFixed(1));
+    formData.append("category", category);
+
+    // Kirim ke Google Sheets dengan mode no-cors untuk menghindari blokir GitHub
+    fetch(scriptURL, { 
+        method: "POST", 
+        body: formData, 
+        mode: 'no-cors' 
+    })
+    .then(() => {
+        // Karena no-cors, kita langsung asumsikan data sampai jika tidak ada error jaringan
+        alert("✅ Data berhasil dikirim ke Google Sheets!");
+        
+        // Tampilkan Hasil
+        document.getElementById("scoreDisplay").innerText = finalScore.toFixed(1);
+        document.getElementById("categoryDisplay").innerText = "Kategori: " + category;
+        document.getElementById("result").style.display = "block";
+        
+        // Sembunyikan form
+        form.style.display = "none";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    })
+    .catch(err => {
+        alert("❌ Gagal mengirim data. Silakan cek koneksi internet Anda.");
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Coba Lagi";
+        console.error("Error saat mengirim:", err);
+    });
+});
+</script>
+
+</body>
+</html>
